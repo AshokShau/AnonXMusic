@@ -44,7 +44,8 @@ class YouTube:
             return None
         return f"anony/cookies/{random.choice(self.cookies)}"
 
-    async def save_cookies(self, urls: list[str]) -> None:
+    @staticmethod
+    async def save_cookies(urls: list[str]) -> None:
         logger.info("Saving cookies from urls...")
         async with aiohttp.ClientSession() as session:
             for url in urls:
@@ -59,7 +60,8 @@ class YouTube:
     def valid(self, url: str) -> bool:
         return bool(re.match(self.regex, url))
 
-    def url(self, message_1: types.Message) -> Union[str, None]:
+    @staticmethod
+    def url(message_1: types.Message) -> Union[str, None]:
         messages = [message_1]
         link = None
         if message_1.reply_to_message:
@@ -85,8 +87,13 @@ class YouTube:
         return None
 
     async def search(self, query: str, m_id: int, video: bool = False) -> Track | None:
-        _search = VideosSearch(query, limit=1)
-        results = await _search.next()
+        try:
+            async with VideosSearch(query) as _search:
+                results = await _search.next()
+        except Exception as e:
+            logger.warning("Search failed: %s", e)
+            return None
+
         if results and results["result"]:
             data = results["result"][0]
             return Track(
@@ -106,8 +113,10 @@ class YouTube:
     async def playlist(self, limit: int, user: str, url: str, video: bool) -> list[Track | None]:
         tracks = []
         try:
-            plist = await Playlist.get(url)
-            for data in plist["videos"][:limit]:
+            async with Playlist(url) as plist:
+                videos = plist.videos
+
+            for data in videos[:limit]:
                 track = Track(
                     id=data.get("id"),
                     channel_name=data.get("channel", {}).get("name", ""),
@@ -121,8 +130,8 @@ class YouTube:
                     video=video,
                 )
                 tracks.append(track)
-        except:
-            pass
+        except Exception as e:
+            logger.warning("Playlist info failed: %s", e)
         return tracks
 
     async def download(self, video_id: str, video: bool = False) -> Optional[str]:
