@@ -35,7 +35,7 @@ class FallenApi:
         }
 
     async def get_track(self, url: str) -> Optional[MusicTrack]:
-        endpoint = f"{self.api_url}/track?url={urllib.parse.quote(url)}"
+        endpoint = f"{self.api_url}/api/track?url={urllib.parse.quote(url)}"
 
         for attempt in range(1, self.retries + 1):
             try:
