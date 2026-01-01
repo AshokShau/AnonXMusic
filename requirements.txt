@@ -3,6 +3,7 @@ kurigram>=2.2.15
 pillow~=12.0.0
 psutil~=7.1.3
 pymongo>=4.15.5
+pydantic
 pytgcrypto>=1.2.11
 py-tgcalls~=2.2.8
 py-yt-search~=0.5.5
