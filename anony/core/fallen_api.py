@@ -15,9 +15,9 @@ from anony import config, logger, app
 
 class MusicTrack(BaseModel):
     cdnurl: str
-    key: str
     url: str
     id: str
+    key: Optional[str] = None
 
 class FallenApi:
     def __init__(self, retries: int = 3, timeout: int = 15):
