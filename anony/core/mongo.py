@@ -296,51 +296,63 @@ class MongoDB:
 
     async def migrate_coll(self) -> None:
         from bson import ObjectId
+    
         logger.info("Migrating users and chats from old collections...")
-
-        users, musers, mchats = [], [], []
-        seen_chats, seen_users = set(), set()
-        users.extend([self.db.tgusersdb.find() + self.usersdb.find()])
-
-        async for user in users:
+    
+        musers, mchats = [], []
+        seen_users, seen_chats = set(), set()
+        
+        async for u in self.db.tgusersdb.find():
             try:
-                if isinstance(user.get("_id"), ObjectId):
-                    user_id = int(user.get("user_id"))
+                uid = int(u.get("user_id"))
+            except (TypeError, ValueError):
+                continue
+    
+            if uid not in seen_users:
+                seen_users.add(uid)
+                musers.append({"_id": uid})
+    
+        async for u in self.usersdb.find():
+            try:
+                if isinstance(u.get("_id"), ObjectId):
+                    uid = int(u.get("user_id"))
                 else:
-                    user_id = int(user.get("_id"))
-            except ValueError:
+                    uid = int(u.get("_id"))
+            except (TypeError, ValueError):
                 continue
-
-            if user_id in seen_users:
-                continue
-            seen_users.add(user_id)
-            musers.append({"_id": user_id})
-
+    
+            if uid not in seen_users:
+                seen_users.add(uid)
+                musers.append({"_id": uid})
+    
         await self.usersdb.drop()
         await self.db.tgusersdb.drop()
+    
         if musers:
             await self.usersdb.insert_many(musers)
-
-        async for chat in self.chatsdb.find():
+    
+        async for c in self.chatsdb.find():
             try:
-                if isinstance(chat.get("_id"), ObjectId):
-                    chat_id = int(chat.get("chat_id"))
+                if isinstance(c.get("_id"), ObjectId):
+                    cid = int(c.get("chat_id"))
                 else:
-                    chat_id = int(chat.get("_id"))
-            except ValueError:
+                    cid = int(c.get("_id"))
+            except (TypeError, ValueError):
                 continue
-
-            if chat_id in seen_chats:
-                continue
-            seen_chats.add(chat_id)
-            mchats.append({"_id": chat_id})
-
+    
+            if cid not in seen_chats:
+                seen_chats.add(cid)
+                mchats.append({"_id": cid})
+    
         await self.chatsdb.drop()
+    
         if mchats:
             await self.chatsdb.insert_many(mchats)
-
+    
         await self.cache.insert_one({"_id": "migrated"})
         logger.info("Migration completed successfully.")
+
+
 
     async def load_cache(self) -> None:
         doc = await self.cache.find_one({"_id": "migrated"})
