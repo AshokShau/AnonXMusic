@@ -9,7 +9,7 @@ from pathlib import Path
 from dataclasses import dataclass
 
 from pyrogram import errors
-from anony import config, logger, app
+from anony import app, config, logger
 
 
 @dataclass
@@ -36,7 +36,6 @@ class FallenApi:
         self.retries = retries
         self.timeout = aiohttp.ClientTimeout(total=timeout)
         self.download_dir = Path("downloads")
-        self.download_dir.mkdir(exist_ok=True)
 
     def _get_headers(self) -> Dict[str, str]:
         return {
@@ -99,7 +98,6 @@ class FallenApi:
                                 if chunk:
                                     f.write(chunk)
 
-                        logger.info(f"Download complete: {save_path}")
                         return str(save_path)
 
             except aiohttp.ClientError as e:
@@ -123,11 +121,9 @@ class FallenApi:
         dl_url = track.cdnurl
         tg_match = re.match(r"https?://t\.me/([^/]+)/(\d+)", dl_url)
         if tg_match:
-            chat, msg_id = tg_match.groups()
             try:
-                msg = await app.get_messages(chat_id=chat, message_ids=int(msg_id))
-                file_path = await msg.download(file_name=self.download_dir)
-                logger.info(f"Telegram media downloaded: {file_path}")
+                msg = await app.get_messages(message_ids=dl_url)
+                file_path = await msg.download()
                 return file_path
             except errors.FloodWait as e:
                 logger.warning(f"[FLOODWAIT] Sleeping {e.value}s before retry.")
