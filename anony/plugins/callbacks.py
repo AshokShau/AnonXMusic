@@ -5,7 +5,7 @@
 
 import re
 
-from pyrogram import filters, types
+from pyrogram import errors, filters, types
 
 from anony import anon, app, db, lang, queue, tg, yt
 from anony.helpers import admin_check, buttons, can_manage_vc
@@ -28,7 +28,14 @@ async def _controls(_, query: types.CallbackQuery):
     user = query.from_user.mention
 
     if not await db.get_call(chat_id):
-        return await query.answer(query.lang["not_playing"], show_alert=True)
+        try:
+            return await query.answer(query.lang["not_playing"], show_alert=True)
+        except errors.QueryIdInvalid:
+            try:
+                await query.message.delete()
+            except Exception:
+                pass
+            return
 
     if action == "status":
         return await query.answer()
@@ -74,7 +81,7 @@ async def _controls(_, query: types.CallbackQuery):
                 chat_id=chat_id, message_ids=[m_id, media.message_id], revoke=True
             )
             media.message_id = None
-        except:
+        except Exception:
             pass
 
         msg = await app.send_message(chat_id=chat_id, text=query.lang["play_next"])
@@ -112,7 +119,7 @@ async def _controls(_, query: types.CallbackQuery):
         await query.edit_message_text(
             f"{mtext}\n\n<blockquote>{reply}</blockquote>", reply_markup=keyboard
         )
-    except:
+    except Exception:
         pass
 
 
@@ -131,8 +138,8 @@ async def _help(_, query: types.CallbackQuery):
         try:
             await query.message.delete()
             return await query.message.reply_to_message.delete()
-        except:
-            pass
+        except Exception:
+            return
 
     await query.edit_message_text(
         text=query.lang[f"help_{data[1]}"],

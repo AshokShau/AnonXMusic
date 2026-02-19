@@ -53,7 +53,10 @@ class Utilities:
                     link = entity.url
                     break
                 elif entity.type == enums.MessageEntityType.URL:
-                    link = message.text[entity.offset: entity.offset + entity.length]
+                    text = message.text or message.caption
+                    if not text:
+                        continue
+                    link = text[entity.offset: entity.offset + entity.length]
                     break
 
         if link:
@@ -76,7 +79,7 @@ class Utilities:
                     return await app.get_users(m.group(0))
                 if m := re.search(r"\b\d{6,15}\b", msg.text):
                     return await app.get_users(int(m.group(0)))
-            except:
+            except Exception:
                 pass
 
         return None
