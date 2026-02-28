@@ -93,11 +93,16 @@ class FallenApi:
 
                         save_path = self.download_dir / filename
 
-                        with open(save_path, "wb") as f:
-                            async for chunk in resp.content.iter_chunked(16 * 1024):
-                                if chunk:
-                                    f.write(chunk)
+                        data = bytearray()
+                        async for chunk in resp.content.iter_chunked(16 * 1024):
+                            if chunk:
+                                data.extend(chunk)
 
+                        def _write_file():
+                            with open(save_path, "wb") as f:
+                                f.write(data)
+
+                        await asyncio.to_thread(_write_file)
                         return str(save_path)
 
             except aiohttp.ClientError as e:

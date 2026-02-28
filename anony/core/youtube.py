@@ -54,8 +54,11 @@ class YouTube:
                 link = "https://batbin.me/raw/" + name
                 async with session.get(link) as resp:
                     resp.raise_for_status()
-                    with open(f"{self.cookie_dir}/{name}.txt", "wb") as fw:
-                        fw.write(await resp.read())
+                    data = await resp.read()
+                    def _write_cookie():
+                        with open(f"{self.cookie_dir}/{name}.txt", "wb") as fw:
+                            fw.write(data)
+                    await asyncio.to_thread(_write_cookie)
         logger.info(f"Cookies saved in {self.cookie_dir}.")
 
     def valid(self, url: str) -> bool:
