@@ -10,6 +10,7 @@ import random
 import asyncio
 import aiohttp
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
 
 from py_yt import Playlist, VideosSearch
 
@@ -27,6 +28,7 @@ class YouTube:
         self.cookie_dir = "anony/cookies"
         self.warned = False
         self.fallen = FallenApi()
+        self.executor = ThreadPoolExecutor(max_workers=5)
         self.regex = re.compile(
             r"(https?://)?(www\.|m\.|music\.)?"
             r"(youtube\.com/(watch\?v=|shorts/|playlist\?list=)|youtu\.be/)"
@@ -127,6 +129,7 @@ class YouTube:
             "overwrites": False,
             "nocheckcertificate": True,
             "cookiefile": cookie,
+            "socket_timeout": 60,
         }
 
         if video:
@@ -153,4 +156,5 @@ class YouTube:
                     return None
             return filename
 
-        return await asyncio.to_thread(_download)
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(self.executor, _download)
