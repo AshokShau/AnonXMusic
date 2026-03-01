@@ -70,13 +70,13 @@ async def update_timer(length=10):
                     next = queue.get_next(chat_id, check=True)
                     if next and not next.file_path and not getattr(next, "is_downloading", False):
                         next.is_downloading = True
-                        async def fetch_next():
+                        async def fetch_next(track=next):
                             try:
-                                next.file_path = await yt.download(next.id, video=next.video)
+                                track.file_path = await yt.download(track.id, video=track.video)
                             except Exception:
                                 pass
                             finally:
-                                next.is_downloading = False
+                                track.is_downloading = False
                         asyncio.create_task(fetch_next())
 
                 if remaining < 10:
